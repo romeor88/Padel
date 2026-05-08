@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Romeo — Fitness Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0a;--bg2:#131313;--bg3:#1c1c1c;--bg4:#242424;
+  --border:#272727;--border2:#363636;
+  --text:#f0f0f0;--text2:#909090;--text3:#505050;
+  --green:#3ddc84;--green-dim:#145230;--green-bg:#041a0e;
+  --amber:#f5a623;--amber-bg:#1a1000;
+  --coral:#ff6b6b;--coral-bg:#1a0404;
+  --blue:#5ba4f5;--blue-bg:#040e1a;
+  --purple:#b388ff;--purple-bg:#0e0a1a;
+  --indigo:#818cf8;--indigo-bg:#0a0c1a;
+  --teal:#2dd4bf;--teal-bg:#041a18;
+  --radius:14px;--radius-sm:10px;--radius-xs:7px;
+  --nav-h:64px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:calc(var(--nav-h) + 20px);overscroll-behavior:none}
+
+/* ── HEADER ── */
+.hdr{background:linear-gradient(180deg,#0f0f0f 0%,#0a0a0a 100%);border-bottom:1px solid var(--border);padding:14px 18px 12px;position:sticky;top:0;z-index:200;backdrop-filter:blur(10px)}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.logo{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--green);letter-spacing:-.3px}
+.logo-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-top:1px;letter-spacing:.04em}
+.today-pill{background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:5px 12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text2)}
+.prog-wrap{display:flex;align-items:center;gap:10px}
+.prog-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);white-space:nowrap}
+.prog-track{flex:1;height:4px;background:var(--border);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--green),#86efac);border-radius:4px;transition:width .5s ease}
+.prog-pct{font-family:'DM Mono',monospace;font-size:11px;color:var(--green);min-width:32px;text-align:right;font-weight:500}
+
+/* ── BOTTOM NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:#0e0e0e;border-top:1px solid var(--border);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;transition:all .15s;padding:8px 4px;border:none;background:transparent;color:var(--text3)}
+.nav-item.active{color:var(--green)}
+.nav-item:active{transform:scale(.92)}
+.nav-ico{font-size:22px;line-height:1;transition:transform .15s}
+.nav-item.active .nav-ico{transform:scale(1.15)}
+.nav-lbl{font-size:9px;font-family:'DM Mono',monospace;letter-spacing:.03em;font-weight:500}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:var(--green);margin-top:2px;opacity:0}
+.nav-item.active .nav-dot{opacity:1}
+
+/* ── SECTIONS ── */
+.content{padding:16px 16px 8px}
+.section{display:none;animation:fadeIn .2s ease}
+.section.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 14px 12px}
+.stat-ico{font-size:20px;margin-bottom:6px}
+.stat-lbl{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:600;color:var(--text);letter-spacing:-1px;line-height:1}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+.card-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card-body{font-size:13px;color:var(--text2);line-height:1.7}
+
+/* ── SECTION HEADING ── */
+.sec-h{font-size:10px;font-family:'DM Mono',monospace;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin:20px 0 10px;display:flex;align-items:center;gap:8px}
+.sec-h::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── TIP ── */
+.tip{background:var(--green-bg);border-left:3px solid var(--green);padding:12px 14px;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:16px}
+.tip strong{color:var(--green);font-weight:500}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;font-weight:500;white-space:nowrap}
+.b-green{background:var(--green-bg);color:var(--green);border:1px solid var(--green-dim)}
+.b-amber{background:var(--amber-bg);color:var(--amber);border:1px solid #4a2e00}
+.b-coral{background:var(--coral-bg);color:var(--coral);border:1px solid #4a1010}
+.b-blue{background:var(--blue-bg);color:var(--blue);border:1px solid #0a2040}
+.b-purple{background:var(--purple-bg);color:var(--purple);border:1px solid #2a1a5a}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid #0a3a36}
+.b-indigo{background:var(--indigo-bg);color:var(--indigo);border:1px solid #1a1c4a}
+
+/* ── CHECKLIST ── */
+.check-item{display:flex;align-items:flex-start;gap:14px;padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;background:var(--bg2);cursor:pointer;transition:all .15s;user-select:none;min-height:56px}
+.check-item:active{transform:scale(.98)}
+.check-item.done{background:var(--green-bg);border-color:var(--green-dim)}
+.checkbox{width:24px;height:24px;border:2px solid var(--border2);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px}
+.check-item.done .checkbox{background:var(--green);border-color:var(--green)}
+.checkmark{display:none;color:#021a0a;font-size:13px;font-weight:700}
+.check-item.done .checkmark{display:block}
+.check-text{flex:1}
+.check-title{font-size:14px;font-weight:500;color:var(--text);line-height:1.4}
+.check-item.done .check-title{color:var(--text3);text-decoration:line-through}
+.check-desc{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5}
+.check-item.done .check-desc{color:var(--text3)}
+.check-meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--amber);margin-top:5px}
+
+/* ── ACCORDION ── */
+.acc-block{margin-bottom:10px}
+.acc-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;user-select:none;min-height:60px;transition:border-color .15s}
+.acc-hdr:active{opacity:.8}
+.acc-hdr.done-all{border-color:var(--green-dim);background:var(--green-bg)}
+.acc-left{display:flex;align-items:center;gap:12px}
+.acc-dot{width:10px;height:10px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background .2s}
+.acc-dot.done{background:var(--green)}
+.acc-name{font-size:15px;font-weight:500;color:var(--text)}
+.acc-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.acc-chev{color:var(--text3);font-size:14px;transition:transform .2s;flex-shrink:0}
+.acc-chev.open{transform:rotate(180deg)}
+.acc-body{display:none;padding:4px 0 4px}
+.acc-body.open{display:block}
+
+/* ── MEAL BLOCKS ── */
+.meal-block{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
+.meal-hdr{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;min-height:60px}
+.meal-hdr:active{background:var(--bg3)}
+.meal-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.meal-name{font-size:14px;font-weight:500;color:var(--text)}
+.meal-body{display:none;padding:0 16px 14px;border-top:1px solid var(--border)}
+.meal-body.open{display:block}
+.opt-row{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);line-height:1.5}
+.opt-row:last-child{border-bottom:none}
+.opt-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:6px}
+
+/* ── WATER ── */
+.water-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-top:10px}
+.water-cup{aspect-ratio:1;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--bg3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:all .15s;user-select:none}
+.water-cup:active{transform:scale(.88)}
+.water-cup.filled{background:var(--blue-bg);border-color:#1a3a6a}
+
+/* ── KCAL BARS ── */
+.kcal-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.kcal-lbl{font-size:12px;color:var(--text2);min-width:96px}
+.kcal-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.kcal-fill{height:100%;border-radius:4px}
+.kcal-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);min-width:58px;text-align:right}
+
+/* ── WEIGHT LOG ── */
+.w-entry{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.w-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.w-week{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);flex:1}
+.w-input{width:80px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-xs);padding:9px 10px;color:var(--text);font-size:15px;font-family:'DM Mono',monospace;outline:none;text-align:center}
+.w-input:focus{border-color:var(--green)}
+.w-unit{font-size:12px;color:var(--text3)}
+.w-delta{font-family:'DM Mono',monospace;font-size:12px;min-width:52px;text-align:right}
+.dn{color:var(--green)}.up{color:var(--coral)}.eq{color:var(--text3)}
+.w-save{margin-top:4px;width:100%;padding:10px;background:transparent;border:1px solid var(--green-dim);border-radius:var(--radius-xs);color:var(--green);font-size:13px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .15s}
+.w-save:active{background:var(--green-bg)}
+
+/* ── STRETCH CARDS ── */
+.stretch-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden}
+.stretch-hdr{padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;min-height:70px}
+.stretch-hdr:active{opacity:.8}
+.stretch-num{width:34px;height:34px;border-radius:50%;background:var(--indigo-bg);border:1px solid var(--indigo);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;color:var(--indigo);font-weight:500;flex-shrink:0}
+.stretch-info{flex:1}
+.stretch-name{font-size:15px;font-weight:500;color:var(--text)}
+.stretch-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--teal);margin-top:3px}
+.stretch-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border)}
+.stretch-body.open{display:block}
+.stretch-how{font-size:13px;color:var(--text2);line-height:1.7;padding-top:12px}
+.stretch-benefit{display:inline-flex;align-items:center;gap:4px;background:var(--teal-bg);border:1px solid #0a3a36;border-radius:20px;padding:3px 10px;font-size:10px;color:var(--teal);font-family:'DM Mono',monospace;margin-top:8px}
+
+/* ── QUOTE ── */
+.quote-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:24px 18px;margin-bottom:12px;text-align:center;position:relative;overflow:hidden}
+.quote-bg{position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:120px;opacity:.04;font-family:'Playfair Display',serif;pointer-events:none;user-select:none}
+.quote-txt{font-family:'Playfair Display',serif;font-size:17px;font-style:italic;color:var(--text);line-height:1.8;margin-bottom:10px;position:relative}
+.quote-auth{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);letter-spacing:.05em;position:relative}
+.q-nav{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.q-btn{padding:8px 20px;background:transparent;border:1px solid var(--border2);border-radius:20px;color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
+.q-btn:active{background:var(--bg3)}
+
+/* ── TIMELINE ── */
+.timeline{padding:4px 0}
+.tl-row{display:flex;gap:12px;margin-bottom:16px}
+.tl-left{display:flex;flex-direction:column;align-items:center;gap:0}
+.tl-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.tl-line{width:2px;flex:1;background:var(--border);margin-top:4px;min-height:20px}
+.tl-content{flex:1;padding-bottom:4px}
+.tl-week{font-family:'DM Mono',monospace;font-size:10px;color:var(--text3);margin-bottom:3px}
+.tl-title{font-size:14px;font-weight:500;color:var(--text)}
+.tl-desc{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.5}
+
+/* ── RESET BTN ── */
+.reset-btn{width:100%;padding:12px;background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text3);font-size:12px;font-family:'DM Mono',monospace;cursor:pointer;margin-top:16px;transition:all .15s}
+.reset-btn:active{border-color:var(--coral);color:var(--coral)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── NIGHT MODE TINT for stretch section ── */
+.night-tint{background:linear-gradient(135deg,#080a14 0%,#0a0a0a 100%);border:1px solid #1a1c36;border-radius:var(--radius);padding:14px;margin-bottom:12px}
+.night-tint .sec-h{color:#5a6a9a}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <div class="logo">Romeo Fitness</div>
+      <div class="logo-sub" id="hdr-date">Loading...</div>
+    </div>
+    <div class="today-pill" id="week-pill">Week 1 of 8</div>
+  </div>
+  <div class="prog-wrap">
+    <span class="prog-lbl">Goal</span>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="prog-pct" id="prog-pct">0%</span>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- ══════════════════ TODAY ══════════════════ -->
+<div id="s-today" class="section active">
+  <div class="tip"><strong>Week target: lose 1.5kg.</strong> Auto-adjusts calories based on today's type. Padel = high carb. Training/rest = low carb.</div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-ico">⚖️</div><div class="stat-lbl">Days left</div><div class="stat-val" id="days-left">56</div><div class="stat-sub">to 88kg target</div></div>
+    <div class="stat-card"><div class="stat-ico">🎯</div><div class="stat-lbl">Today kcal</div><div class="stat-val" id="kcal-today">1,800</div><div class="stat-sub" id="kcal-sub">padel day</div></div>
+    <div class="stat-card"><div class="stat-ico">💪</div><div class="stat-lbl">Protein min</div><div class="stat-val">160g</div><div class="stat-sub">daily target</div></div>
+    <div class="stat-card"><div class="stat-ico">🥎</div><div class="stat-lbl">Padel days</div><div class="stat-val">3×</div><div class="stat-sub">Mon · Wed · Fri</div></div>
+  </div>
+
+  <div class="sec-h">Calorie guide</div>
+  <div class="card">
+    <div class="kcal-row"><span class="kcal-lbl">🟢 Padel day</span><div class="kcal-track"><div class="kcal-fill" style="width:90%;background:var(--green)"></div></div><span class="kcal-val">~1,800</span></div>
+    <div class="kcal-row"><span class="kcal-lbl">🟡 Training day</span><div class="kcal-track"><div class="kcal-fill" style="width:70%;background:var(--amber)"></div></div><span class="kcal-val">~1,400</span></div>
+    <div class="kcal-row"><span class="kcal-lbl">🔴 Rest day</span><div class="kcal-track"><div class="kcal-fill" style="width:55%;background:var(--coral)"></div></div><span class="kcal-val">~1,200</span></div>
+    <div class="kcal-row"><span class="kcal-lbl">🔵 Padel burn</span><div class="kcal-track"><div class="kcal-fill" style="width:62%;background:var(--blue)"></div></div><span class="kcal-val">500–1,250</span></div>
+  </div>
+
+  <div class="sec-h">Water intake</div>
+  <div class="card">
+    <div class="card-body">Target 8 glasses (3–4L). Tap each as you drink.</div>
+    <div class="water-grid" id="water-grid"></div>
+  </div>
+
+  <div class="sec-h">Today's checklist</div>
+  <div id="today-checks"></div>
+
+  <button class="reset-btn" onclick="resetToday()">↺ Reset today's checklist</button>
+</div>
+
+<!-- ══════════════════ MEALS ══════════════════ -->
+<div id="s-meals" class="section">
+  <div class="tip"><strong>Rule:</strong> Rice only at breakfast/lunch on padel days. NEVER rice at dinner. Protein every meal. Swap freely within each category.</div>
+
+  <div class="sec-h">Padel day <span class="badge b-green" style="margin-left:6px">High carb · ~1,800 kcal</span></div>
+
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('pm1')"><div><div class="meal-time">Pre-padel · 45–60 min before</div><div class="meal-name">Banana + 2 eggs + electrolyte</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="pm1">
+      <div class="opt-row"><div class="opt-dot"></div><div>1 banana + 2 boiled eggs + Pocari or homemade salt-lime water</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Banana swap: papaya, watermelon, small bowl oats</div></div>
+    </div>
+  </div>
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('pm2')"><div><div class="meal-time">Post-padel · within 45 min</div><div class="meal-name">Rice + protein + vegetables</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="pm2">
+      <div class="opt-row"><div class="opt-dot"></div><div>1 cup cooked rice + 150g grilled chicken + stir-fried greens</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Protein swap: ikan bakar · tuna · tempe+tofu · telur dadar · daging sapi · udang</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Veg swap: kangkung · bayam · buncis · brokoli · wortel · labu — anything works</div></div>
+    </div>
+  </div>
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('pm3')"><div><div class="meal-time">Lunch</div><div class="meal-name">Half rice + protein + sayur</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="pm3">
+      <div class="opt-row"><div class="opt-dot"></div><div>Half cup nasi merah (preferred) + protein + soup or sayur</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Options: soto ayam · bakso (skip extra rice) · gado-gado · sup ayam + tahu</div></div>
+    </div>
+  </div>
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('pm4')"><div><div class="meal-time">Dinner · NO rice ever</div><div class="meal-name">Grilled protein + vegetables only</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="pm4">
+      <div class="opt-row"><div class="opt-dot"></div><div>150–200g ayam bakar/kukus + large lalapan or steamed veg</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Swap: ikan bakar · ikan kukus · udang rebus · telur + tahu + tempe combo</div></div>
+      <div class="opt-row" style="color:var(--coral)"><div class="opt-dot" style="background:var(--coral)"></div><div>NO rice · NO noodles · NO bread — even on padel days</div></div>
+    </div>
+  </div>
+
+  <div class="sec-h">Training + rest days <span class="badge b-amber" style="margin-left:6px">Low carb · 1,200–1,400 kcal</span></div>
+
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('lm1')"><div><div class="meal-time">Breakfast · NO rice</div><div class="meal-name">Eggs + tempe — no carbs</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="lm1">
+      <div class="opt-row"><div class="opt-dot"></div><div>3 eggs any style + tempe goreng tanpa tepung</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Add: avocado, keju slice, or tahu bakar for variety</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>First drink: warm water + pinch salt + lime. Coffee only after eating.</div></div>
+    </div>
+  </div>
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('lm2')"><div><div class="meal-time">Lunch</div><div class="meal-name">Protein + sayur + small sweet potato</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="lm2">
+      <div class="opt-row"><div class="opt-dot"></div><div>150g grilled protein + large sayur/salad + half medium sweet potato</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Options: gado-gado no lontong · sayur asem + ikan · sup ayam + tahu</div></div>
+    </div>
+  </div>
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('lm3')"><div><div class="meal-time">Snack (optional)</div><div class="meal-name">Small protein only</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="lm3">
+      <div class="opt-row"><div class="opt-dot"></div><div>2 boiled eggs, OR 15–20 kacang almond/mete, OR edamame rebus</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Night craving: boiled eggs · tahu rebus · warm milk · wedang jahe no sugar · bone broth</div></div>
+    </div>
+  </div>
+  <div class="meal-block">
+    <div class="meal-hdr" onclick="toggleMeal('lm4')"><div><div class="meal-time">Dinner · max 8pm</div><div class="meal-name">Light protein + veg only</div></div><span style="color:var(--text3)">▾</span></div>
+    <div class="meal-body" id="lm4">
+      <div class="opt-row"><div class="opt-dot"></div><div>Ikan bakar/kukus + tahu + lalapan — cleanest dinner possible</div></div>
+      <div class="opt-row"><div class="opt-dot"></div><div>Or: sup iga/soto (no rice) · ayam kukus + steamed greens</div></div>
+    </div>
+  </div>
+
+  <div class="sec-h">Drinks always allowed</div>
+  <div class="card">
+    <div class="card-body">
+      ✅ Water 3–4L &nbsp;·&nbsp; ✅ Air kelapa &nbsp;·&nbsp; ✅ Teh tawar &nbsp;·&nbsp; ✅ Black coffee (after food)<br>
+      ✅ Wedang jahe no sugar &nbsp;·&nbsp; ✅ Sparkling water + lime &nbsp;·&nbsp; ✅ Plain warm milk (bedtime)<br>
+      ✅ Pocari / homemade ORS on padel days only<br><br>
+      <span style="color:var(--coral)">❌ Teh manis &nbsp;·&nbsp; ❌ Es jeruk gula &nbsp;·&nbsp; ❌ Juice &nbsp;·&nbsp; ❌ Alcohol &nbsp;·&nbsp; ❌ Sugary drinks</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ EXERCISE ══════════════════ -->
+<div id="s-exercise" class="section">
+  <div class="tip"><strong>Mon/Wed/Fri</strong> = Padel. <strong>Tue/Thu/Sat</strong> = Home training. <strong>Sun</strong> = Full rest. All home — no gym, no medicine ball. Dumbbells used where noted.</div>
+
+  <div class="sec-h">Tuesday — Lower body + core</div>
+  <div class="acc-block">
+    <div class="acc-hdr" onclick="toggleAcc('ex-tue','extue')">
+      <div class="acc-left"><div class="acc-dot" id="exdot-tue"></div><div><div class="acc-name">Tuesday workout</div><div class="acc-sub">Lower body · core power · ~35 min</div></div></div>
+      <span class="badge b-purple">Lower</span><span class="acc-chev" id="exchev-tue"> ▾</span>
+    </div>
+    <div class="acc-body" id="ex-items-tue">
+      <div class="check-item" onclick="toggleCheck(this,'extue')" data-id="extue-1"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Chair squats (slow)</div><div class="check-desc">Squat to chair seat, just touch it, stand. 3 sec down, explosive up. Safe on knees.</div><div class="check-meta">3 × 10 reps · rest 60s</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'extue')" data-id="extue-2"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Lateral band walks</div><div class="check-desc">Band around ankles, mini-squat, walk sideways 10 steps each direction. No band: wide squat steps.</div><div class="check-meta">3 × 15 steps each side</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'extue')" data-id="extue-3"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Dumbbell Romanian deadlift</div><div class="check-desc">Hinge at hips, lower slowly keeping back flat, feel hamstring stretch. Great posterior chain without knee stress.</div><div class="check-meta">3 × 10 reps · light-medium weight</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'extue')" data-id="extue-4"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Calf raises (slow eccentric)</div><div class="check-desc">Rise on toes, hold 2s, lower SLOWLY 4s. Builds calf endurance, reduces cramp risk.</div><div class="check-meta">3 × 15 reps</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'extue')" data-id="extue-5"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Dead bug</div><div class="check-desc">Lie on back, arms up, knees 90°. Lower opposite arm + leg, return slow. Anti-rotation core stability.</div><div class="check-meta">3 × 10 each side</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'extue')" data-id="extue-6"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Pallof press hold</div><div class="check-desc">Band at door handle, stand sideways, press and hold. Or hold dumbbell at chest sideways. Core anti-rotation.</div><div class="check-meta">3 × 30s each side</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec-h">Thursday — Upper body + rotation</div>
+  <div class="acc-block">
+    <div class="acc-hdr" onclick="toggleAcc('ex-thu','exthu')">
+      <div class="acc-left"><div class="acc-dot" id="exdot-thu"></div><div><div class="acc-name">Thursday workout</div><div class="acc-sub">Upper body · smash power · ~35 min</div></div></div>
+      <span class="badge b-blue">Upper</span><span class="acc-chev" id="exchev-thu"> ▾</span>
+    </div>
+    <div class="acc-body" id="ex-items-thu">
+      <div class="check-item" onclick="toggleCheck(this,'exthu')" data-id="exthu-1"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Push-up variations</div><div class="check-desc">Set 1: standard · Set 2: wide grip · Set 3: close grip. On knees if needed — no ego.</div><div class="check-meta">3 × 10–12 reps</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exthu')" data-id="exthu-2"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Dumbbell bent-over row</div><div class="check-desc">One hand on chair, pull dumbbell to hip, squeeze at top. Builds back strength and posture.</div><div class="check-meta">3 × 12 each arm</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exthu')" data-id="exthu-3"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Dumbbell diagonal chop</div><div class="check-desc">Both hands on one dumbbell, swing high-right to low-left. Exact smash motion pattern.</div><div class="check-meta">3 × 15 each direction</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exthu')" data-id="exthu-4"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Broomstick rotation</div><div class="check-desc">Shoulder-width grip, fast rotations left-right, hips square. Trains hip-shoulder rotation for every padel shot.</div><div class="check-meta">3 × 20 reps</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exthu')" data-id="exthu-5"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Shoulder external rotation (dumbbell)</div><div class="check-desc">Elbow tucked to side, very light weight, rotate forearm outward. Protects rotator cuff — non-negotiable at 47.</div><div class="check-meta">3 × 15 each arm · very light</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exthu')" data-id="exthu-6"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Forearm plank</div><div class="check-desc">Squeeze glutes, abs, legs. Don't let hips sag. Build from 30s toward 60s over weeks.</div><div class="check-meta">3 × 30–60s</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec-h">Saturday — Agility + footwork</div>
+  <div class="acc-block">
+    <div class="acc-hdr" onclick="toggleAcc('ex-sat','exsat')">
+      <div class="acc-left"><div class="acc-dot" id="exdot-sat"></div><div><div class="acc-name">Saturday workout</div><div class="acc-sub">Padel footwork · agility · ~30 min</div></div></div>
+      <span class="badge b-coral">Agility</span><span class="acc-chev" id="exchev-sat"> ▾</span>
+    </div>
+    <div class="acc-body" id="ex-items-sat">
+      <div class="check-item" onclick="toggleCheck(this,'exsat')" data-id="exsat-1"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Shadow padel split-step drill</div><div class="check-desc">Imagine opponent hitting, small hop, explode to imaginary ball, swing racket, recover center. Most important padel habit.</div><div class="check-meta">3 × 90 seconds</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exsat')" data-id="exsat-2"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Tape ladder footwork</div><div class="check-desc">4 tape lines on floor, in-in-out-out lateral. Light feet, soft sound. Not speed — coordination.</div><div class="check-meta">2 × 60 seconds</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exsat')" data-id="exsat-3"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">4-corner sprint (bottles/shoes)</div><div class="check-desc">4 objects in 2×2m square, sprint to each corner randomly. Trains directional change speed.</div><div class="check-meta">5 rounds × 30s work / 30s rest</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exsat')" data-id="exsat-4"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Hip flexor lunge stretch</div><div class="check-desc">60s each side. Most important stretch for court movement. Breathe and sink deeper each breath.</div><div class="check-meta">60s each side · 2 rounds</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exsat')" data-id="exsat-5"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Thoracic spine rotation</div><div class="check-desc">Lie on side, rotate top arm overhead behind you, hold 3s. Unlocks shoulder rotation for full swings.</div><div class="check-meta">10 reps each side</div></div></div>
+      <div class="check-item" onclick="toggleCheck(this,'exsat')" data-id="exsat-6"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Self-massage quads + calves</div><div class="check-desc">Firm pressure along muscle, 2 min per leg. Use foam roller or firm cushion. Reduces soreness going into next week.</div><div class="check-meta">2 min each leg</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec-h">Padel warm-up (every session)</div>
+  <div class="card">
+    <div class="card-body" style="line-height:2.3">
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">2 min</span> · Light jog / jumping jacks<br>
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">1 min</span> · Hip circles both directions<br>
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">1 min</span> · Arm circles + shoulder rotations<br>
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">1 min</span> · Lateral shuffle at 50%<br>
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">2 min</span> · Split-step practice on court<br>
+      <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px">After play</span> · See Night Stretch routine
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ NIGHT STRETCH ══════════════════ -->
+<div id="s-stretch" class="section">
+  <div class="tip" style="background:#080a14;border-color:#818cf8;color:#a0a8c0"><strong style="color:var(--indigo)">Every night before sleep.</strong> 15–20 minutes. Dim the lights. Slow breathing. This routine builds flexibility over time, speeds up muscle recovery, and significantly improves sleep quality. Do in bed or on your bedroom floor.</div>
+
+  <div class="sec-h">Full night routine · 15–20 min</div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st1')">
+      <div class="stretch-num">1</div>
+      <div class="stretch-info"><div class="stretch-name">Supine knee hug</div><div class="stretch-time">45s each side · in bed</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st1">
+      <div class="stretch-how">Lie on your back. Pull one knee gently to your chest with both hands. Hold, breathe slowly, feel the lower back and glute release. Switch sides. Start here every night — it's the gentlest opener and instantly releases lower back tension from a day of sitting or playing.<br><br>As you breathe out, pull the knee very slightly closer. Don't force it.</div>
+      <div class="stretch-benefit">Lower back · glutes · hip release</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st2')">
+      <div class="stretch-num">2</div>
+      <div class="stretch-info"><div class="stretch-name">Figure-4 glute stretch</div><div class="stretch-time">60s each side · in bed</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st2">
+      <div class="stretch-how">Lie on back, knees bent. Cross right ankle over left knee (like a figure 4). Either stay here or pull the left thigh toward your chest — you'll feel a deep stretch in the right glute and hip. This is the most effective stretch for piriformis tightness which causes a lot of lower back and hip pain in padel players.<br><br>The deeper the glute stretch, the better your lateral movement on court.</div>
+      <div class="stretch-benefit">Piriformis · glutes · hip external rotation</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st3')">
+      <div class="stretch-num">3</div>
+      <div class="stretch-info"><div class="stretch-name">Supine hip flexor (psoas) stretch</div><div class="stretch-time">60s each side · floor or bed edge</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st3">
+      <div class="stretch-how">Sit on the edge of your bed. Lie back and let one leg hang off the side toward the floor while the other knee stays bent and pulled toward chest. Feel the front of the hanging hip stretch. This is the single most important flexibility unlock for court movement and lower back health. Most people who sit during the day have extremely tight hip flexors.<br><br>If you can only do one stretch from this list, do this one.</div>
+      <div class="stretch-benefit">Hip flexors · psoas · lower back · court movement</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st4')">
+      <div class="stretch-num">4</div>
+      <div class="stretch-info"><div class="stretch-name">Lying quad stretch</div><div class="stretch-time">45s each side · in bed</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st4">
+      <div class="stretch-how">Lie on your side. Bend the top knee and hold your ankle behind you, pulling heel toward your glute. Keep hips stacked, don't twist. You'll feel the front of the thigh stretch deeply. After 3 hours of padel your quads are your most overworked muscle — this prevents the next-day stiffness you felt this week.<br><br>Breathe slowly and hold without bouncing. The stretch deepens naturally as you relax.</div>
+      <div class="stretch-benefit">Quadriceps · knee tracking · post-padel recovery</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st5')">
+      <div class="stretch-num">5</div>
+      <div class="stretch-info"><div class="stretch-name">Supine hamstring stretch (towel)</div><div class="stretch-time">45s each side · in bed</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st5">
+      <div class="stretch-how">Lie on back. Loop a towel or bedsheet around one foot. Straighten the leg and gently pull it toward you using the towel — keep the knee as straight as comfortable. The other leg stays flat on the bed. This is the safest hamstring stretch you can do — no forward bending that strains the lower back.<br><br>Don't force the leg up. Let it rise naturally to where you feel tension, then hold there.</div>
+      <div class="stretch-benefit">Hamstrings · sciatic nerve · lower back</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st6')">
+      <div class="stretch-num">6</div>
+      <div class="stretch-info"><div class="stretch-name">Calf + Achilles stretch against wall</div><div class="stretch-time">60s each side · standing at wall</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st6">
+      <div class="stretch-how">Stand facing your bedroom wall. One foot back, heel flat on floor, lean forward keeping back leg straight — stretches the calf. Then slightly bend the back knee — this targets the deeper Achilles and soleus. This is your #1 cramp prevention stretch. Do it every single night regardless of whether you played padel.<br><br>This is the stretch that will stop the overnight calf cramps you've been getting.</div>
+      <div class="stretch-benefit">Calves · Achilles · cramp prevention · ankle mobility</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st7')">
+      <div class="stretch-num">7</div>
+      <div class="stretch-info"><div class="stretch-name">Thoracic rotation (book opener)</div><div class="stretch-time">10 reps each side · in bed</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st7">
+      <div class="stretch-how">Lie on your side with knees stacked and bent at 90°. Extend both arms forward. Take the top arm and slowly rotate it overhead and toward the bed behind you, following your hand with your eyes. Hold 3 seconds at the end range, return. This opens the mid-back (thoracic spine) which directly unlocks shoulder rotation for padel swings and relieves upper back tension from sitting.<br><br>Move only as far as comfortable — this gets dramatically better within 2–3 weeks.</div>
+      <div class="stretch-benefit">Thoracic spine · shoulder rotation · upper back tension</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st8')">
+      <div class="stretch-num">8</div>
+      <div class="stretch-info"><div class="stretch-name">Child's pose (floor or bed)</div><div class="stretch-time">90s continuous</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st8">
+      <div class="stretch-how">Kneel and sit back toward your heels. Reach arms forward on the bed/floor and lower your forehead down. Let the entire back decompress. If your hips don't reach your heels, place a pillow between them. This position decompresses the entire spine after a day of being upright, releases the lower back, and calms the nervous system — which directly improves sleep quality.<br><br>Focus on slow, deep belly breathing here. This is your transition into sleep mode.</div>
+      <div class="stretch-benefit">Full spine · lower back · nervous system calm · sleep quality</div>
+    </div>
+  </div>
+
+  <div class="stretch-card">
+    <div class="stretch-hdr" onclick="toggleStretch('st9')">
+      <div class="stretch-num">9</div>
+      <div class="stretch-info"><div class="stretch-name">Legs-up relaxation pose</div><div class="stretch-time">3–5 min · in bed against headboard</div></div>
+      <span style="color:var(--text3)">▾</span>
+    </div>
+    <div class="stretch-body" id="st9">
+      <div class="stretch-how">Lie on your back and rest your legs up against the headboard or wall — legs straight up, relaxed. Close your eyes, breathe slowly. This is a passive recovery technique that drains lactic acid buildup from the legs, reduces inflammation, and reliably reduces overnight cramp risk.<br><br>This is the best thing you can do specifically for your calf cramp problem. It requires zero effort — you're literally just lying there. Stay 3–5 minutes before settling into sleep position.</div>
+      <div class="stretch-benefit">Leg recovery · lactic acid drainage · cramp prevention · sleep</div>
+    </div>
+  </div>
+
+  <div class="sec-h">Night stretch checklist</div>
+  <div class="check-item" onclick="toggleCheck(this,'stretch')" data-id="ns-1"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Full night routine completed (15–20 min)</div><div class="check-desc">All 9 stretches done in order. Lights dim. Slow breathing throughout.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'stretch')" data-id="ns-2"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Calf + Achilles stretch done (#6)</div><div class="check-desc">Non-negotiable every night. This one prevents the overnight cramps.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'stretch')" data-id="ns-3"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">Magnesium taken before stretching</div><div class="check-desc">300–400mg magnesium glycinate + Counterpain on calves if played today.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'stretch')" data-id="ns-4"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">In bed by 10:30pm</div><div class="check-desc">HGH recovery peaks 11pm–2am. Sleep is literally training.</div></div></div>
+</div>
+
+<!-- ══════════════════ WEIGHT ══════════════════ -->
+<div id="s-weight" class="section">
+  <div class="tip"><strong>Every Monday morning.</strong> Same time, before eating, after toilet. Target: 1–1.5kg loss per week.</div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-ico">🏁</div><div class="stat-lbl">Start</div><div class="stat-val">101</div><div class="stat-sub">kg baseline</div></div>
+    <div class="stat-card"><div class="stat-ico">🎯</div><div class="stat-lbl">Target</div><div class="stat-val">88</div><div class="stat-sub">kg in 8 weeks</div></div>
+    <div class="stat-card"><div class="stat-ico">📉</div><div class="stat-lbl">To lose</div><div class="stat-val">13 kg</div><div class="stat-sub">total</div></div>
+    <div class="stat-card"><div class="stat-ico">📅</div><div class="stat-lbl">Per week</div><div class="stat-val">~1.6</div><div class="stat-sub">kg target</div></div>
+  </div>
+
+  <div class="sec-h">Progress chart</div>
+  <div class="card"><svg id="wt-chart" viewBox="0 0 320 110" width="100%" height="110"></svg></div>
+
+  <div class="sec-h">Weekly weigh-in</div>
+  <div id="weight-log"></div>
+</div>
+
+<!-- ══════════════════ SUPPS ══════════════════ -->
+<div id="s-supps" class="section">
+  <div class="tip">Your stack: <strong>Creatine · Vit D · Vit C · Omega-3 · Zinc · Magnesium</strong>. Tap to check off. Reset daily.</div>
+
+  <div class="sec-h">Morning · with breakfast</div>
+
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-1"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">💪 Creatine — 5g</div><div class="check-desc">Mix into water or shake. Every day including rest days. Explosive power + muscle retention + cognitive boost after 40.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-2"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">☀️ Vitamin D3 — 2,000–4,000 IU</div><div class="check-desc">With fatty meal. Muscle function, recovery, immune, testosterone. Add K2 if you can find it.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-3"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">🍊 Vitamin C — 500mg (dose 1)</div><div class="check-desc">With breakfast. Collagen synthesis for tendons + ligaments. Splits doses absorb better.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-4"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">🐟 Omega-3 — 2–3g EPA+DHA</div><div class="check-desc">With food. Anti-inflammatory for joint soreness. Take with food to prevent fish burps.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-5"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">⚡ Zinc — 15–25mg</div><div class="check-desc">With lunch (not empty stomach). Testosterone support, immune, muscle repair.</div></div></div>
+
+  <div class="sec-h">Evening · before bed</div>
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-6"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">🌙 Magnesium glycinate — 300–400mg</div><div class="check-desc">Before bed. Most critical supplement over 40. Sleep quality, muscle recovery, cramp prevention. Glycinate is gentle on stomach.</div></div></div>
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-7"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">🍊 Vitamin C — 500mg (dose 2)</div><div class="check-desc">Second split dose. Better absorption than one large dose.</div></div></div>
+
+  <div class="sec-h">Padel days only</div>
+  <div class="check-item" onclick="toggleCheck(this,'supp')" data-id="supp-8"><div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">💧 Electrolyte drink</div><div class="check-desc">Pocari or homemade: glass water + pinch salt + ½ tsp sugar + lime. Before + after court.</div></div></div>
+
+  <button class="reset-btn" onclick="resetSupp()">↺ Reset supplement checks</button>
+</div>
+
+<!-- ══════════════════ MOTIVATION ══════════════════ -->
+<div id="s-motive" class="section">
+  <div class="quote-wrap">
+    <div class="quote-bg">"</div>
+    <div class="quote-txt" id="q-text">Loading...</div>
+    <div class="quote-auth" id="q-auth">—</div>
+    <div class="q-nav">
+      <button class="q-btn" onclick="prevQ()">← Prev</button>
+      <button class="q-btn" onclick="nextQ()">Next →</button>
+    </div>
+  </div>
+
+  <div class="sec-h">Your 8-week journey</div>
+  <div class="card">
+    <div class="timeline">
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-week">Week 1–2</div><div class="tl-title">First drop</div><div class="tl-desc">2–3kg fast from water + glycogen. Low carb kicks in. Body adjusts.</div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:var(--teal)"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-week">Week 3–4</div><div class="tl-title">Steady fat loss</div><div class="tl-desc">1–1.5kg/week real fat. Energy stabilises. Padel starts feeling different.</div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:var(--blue)"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-week">Week 5–6</div><div class="tl-title">Performance shift</div><div class="tl-desc">Noticeably faster on court. Stamina up. Smashes stronger.</div></div></div>
+      <div class="tl-row"><div class="tl-left"><div class="tl-dot" style="background:var(--amber)"></div><div class="tl-line"></div></div><div class="tl-content"><div class="tl-week">Week 7–8</div><div class="tl-title">Final push · 88kg</div><div class="tl-desc">Target weight. Peak padel performance. A version of you that already exists.</div></div></div>
+    </div>
+  </div>
+
+  <div class="sec-h">Daily non-negotiables</div>
+  <div class="card">
+    <div class="card-body" style="line-height:2.1">
+      🚫 No rice at dinner — ever<br>
+      💧 3–4L water daily<br>
+      💪 160g+ protein minimum<br>
+      😴 7.5–8h sleep — HGH is training<br>
+      🌙 Night stretch before bed<br>
+      ⏰ No eating after 8pm<br>
+      📅 Weigh in every Monday morning<br>
+      🎾 3 padel sessions per week
+    </div>
+  </div>
+</div>
+
+</div><!-- end content -->
+
+<!-- BOTTOM NAV -->
+<nav class="nav">
+  <button class="nav-item active" id="nav-today" onclick="goTab('today')">
+    <span class="nav-ico">📋</span><span class="nav-lbl">Today</span><div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-meals" onclick="goTab('meals')">
+    <span class="nav-ico">🍽️</span><span class="nav-lbl">Meals</span><div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-exercise" onclick="goTab('exercise')">
+    <span class="nav-ico">💪</span><span class="nav-lbl">Exercise</span><div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-stretch" onclick="goTab('stretch')">
+    <span class="nav-ico">🌙</span><span class="nav-lbl">Stretch</span><div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-weight" onclick="goTab('weight')">
+    <span class="nav-ico">⚖️</span><span class="nav-lbl">Weight</span><div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-supps" onclick="goTab('supps')">
+    <span class="nav-ico">💊</span><span class="nav-lbl">Supps</span><div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" id="nav-motive" onclick="goTab('motive')">
+    <span class="nav-ico">🔥</span><span class="nav-lbl">Mindset</span><div class="nav-dot"></div>
+  </button>
+</nav>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+function gs(){try{return JSON.parse(localStorage.getItem('romeo_v2')||'{}')}catch(e){return{}}}
+function ss(s){try{localStorage.setItem('romeo_v2',JSON.stringify(s))}catch(e){}}
+
+// ── DATE / WEEK ────────────────────────────────────────
+var START=new Date('2026-05-11');
+var NOW=new Date();
+var DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+document.getElementById('hdr-date').textContent=DAYS[NOW.getDay()]+', '+NOW.getDate()+' '+MONTHS[NOW.getMonth()]+' '+NOW.getFullYear();
+var daysSince=Math.max(0,Math.floor((NOW-START)/86400000));
+var wk=Math.min(8,Math.floor(daysSince/7)+1);
+var dLeft=Math.max(0,56-daysSince);
+document.getElementById('week-pill').textContent='Week '+wk+' of 8';
+document.getElementById('days-left').textContent=dLeft;
+var dow=NOW.getDay();
+var isPadel=(dow===1||dow===3||dow===5||dow===6);
+var isRest=dow===0;
+document.getElementById('kcal-today').textContent=isPadel?'1,800':isRest?'1,200':'1,400';
+document.getElementById('kcal-sub').textContent=isPadel?'padel day — high carb':isRest?'rest day — low carb':'training day — low carb';
+
+// ── BOTTOM NAV ─────────────────────────────────────────
+function goTab(id){
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active')});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active')});
+  var sec=document.getElementById('s-'+id);
+  var nav=document.getElementById('nav-'+id);
+  if(sec)sec.classList.add('active');
+  if(nav)nav.classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── CHECKS ─────────────────────────────────────────────
+function toggleCheck(el,grp){
+  var id=el.getAttribute('data-id');
+  var s=gs();
+  if(el.classList.contains('done')){el.classList.remove('done');delete s[id];}
+  else{el.classList.add('done');s[id]=true;}
+  ss(s);
+  updateProg();
+  updateExDots();
+}
+function loadState(){
+  var s=gs();
+  document.querySelectorAll('[data-id]').forEach(function(el){
+    if(s[el.getAttribute('data-id')])el.classList.add('done');
+  });
+}
+function updateProg(){
+  var all=document.querySelectorAll('#today-checks [data-id]').length;
+  var done=document.querySelectorAll('#today-checks [data-id].done').length;
+  var pct=all>0?Math.round(done/all*100):0;
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('prog-pct').textContent=pct+'%';
+  // also check weight-based progress
+  var s=gs();
+  for(var i=7;i>=0;i--){if(s['weight-'+i]){var cur=parseFloat(s['weight-'+i]);var wp=Math.min(100,Math.round((101-cur)/13*100));if(wp>pct){document.getElementById('prog-fill').style.width=wp+'%';document.getElementById('prog-pct').textContent=wp+'%';}break;}}
+}
+
+// ── TODAY CHECKS ───────────────────────────────────────
+var todayItems=isPadel?[
+  {id:'td-1',t:'Pre-padel meal eaten',d:'Banana + 2 eggs + electrolyte drink. 45–60 min before.'},
+  {id:'td-2',t:'Padel session completed',d:'500–1,250 kcal burned. Warm up properly first.'},
+  {id:'td-3',t:'Post-padel recovery meal',d:'Rice + protein + veg within 45 min. Most important meal.'},
+  {id:'td-4',t:'3L+ water today',d:'Electrolyte drink counts. Keep sipping all day.'},
+  {id:'td-5',t:'No rice at dinner',d:'Non-negotiable even on padel days.'},
+  {id:'td-6',t:'Supplements taken',d:'All morning supps + evening magnesium before bed.'},
+  {id:'td-7',t:'Night stretch routine done',d:'15–20 min. See Stretch tab. Helps recovery tonight.'},
+  {id:'td-8',t:'In bed by 10:30pm',d:'HGH peaks 11pm–2am. Sleep is training.'}
+]:[
+  {id:'td-1',t:'Morning warm water + salt + lime',d:'Before coffee. Restores sodium after overnight fast.'},
+  {id:'td-2',t:'Home workout completed',d:'See Exercise tab for today\'s routine.'},
+  {id:'td-3',t:'160g+ protein hit today',d:'Eggs 14g · chicken 35g/100g · tempe 18g/100g.'},
+  {id:'td-4',t:'3L+ water today',d:'Plain water, teh tawar, air kelapa all count.'},
+  {id:'td-5',t:'No rice today (low carb day)',d:'Sweet potato only if needed. Skip noodles and bread too.'},
+  {id:'td-6',t:'Supplements taken',d:'All morning supps + evening magnesium before bed.'},
+  {id:'td-7',t:'Night stretch routine done',d:'15–20 min before bed. See Stretch tab.'},
+  {id:'td-8',t:'No eating after 8pm',d:'Warm water / wedang jahe if craving hits. Kitchen closed.'}
+];
+var tc=document.getElementById('today-checks');
+var s=gs();
+todayItems.forEach(function(item){
+  var div=document.createElement('div');
+  div.className='check-item'+(s[item.id]?' done':'');
+  div.setAttribute('data-id',item.id);
+  div.onclick=function(){toggleCheck(this,'today')};
+  div.innerHTML='<div class="checkbox"><span class="checkmark">✓</span></div><div class="check-text"><div class="check-title">'+item.t+'</div><div class="check-desc">'+item.d+'</div></div>';
+  tc.appendChild(div);
+});
+
+// ── WATER ──────────────────────────────────────────────
+var wg=document.getElementById('water-grid');
+var ws=gs();
+for(var i=0;i<8;i++){
+  var cup=document.createElement('div');
+  cup.className='water-cup'+(ws['w-'+i]?' filled':'');
+  cup.innerHTML='💧';
+  cup.setAttribute('data-wi',i);
+  cup.onclick=function(){
+    var idx=this.getAttribute('data-wi');
+    var st=gs();
+    if(this.classList.contains('filled')){this.classList.remove('filled');delete st['w-'+idx];}
+    else{this.classList.add('filled');st['w-'+idx]=true;}
+    ss(st);
+  };
+  wg.appendChild(cup);
+}
+
+// ── ACCORDION ──────────────────────────────────────────
+function toggleAcc(bodyId,grp){
+  var body=document.getElementById('ex-items-'+bodyId.replace('ex-',''));
+  var chev=document.getElementById('exchev-'+bodyId.replace('ex-',''));
+  if(!body)return;
+  var o=body.classList.contains('open');
+  body.classList.toggle('open',!o);
+  chev.classList.toggle('open',!o);
+}
+function updateExDots(){
+  ['tue','thu','sat'].forEach(function(d){
+    var items=document.querySelectorAll('#ex-items-'+d+' [data-id]');
+    var done=document.querySelectorAll('#ex-items-'+d+' [data-id].done');
+    var dot=document.getElementById('exdot-'+d);
+    if(dot)dot.classList.toggle('done',items.length>0&&done.length===items.length);
+  });
+}
+
+// ── MEAL TOGGLES ───────────────────────────────────────
+function toggleMeal(id){var b=document.getElementById(id);if(b)b.classList.toggle('open')}
+
+// ── STRETCH TOGGLES ────────────────────────────────────
+function toggleStretch(id){var b=document.getElementById(id);if(b)b.classList.toggle('open')}
+
+// ── WEIGHT LOG ─────────────────────────────────────────
+var wlEl=document.getElementById('weight-log');
+var wkLbls=['Week 1 · May 12','Week 2 · May 19','Week 3 · May 26','Week 4 · Jun 2','Week 5 · Jun 9','Week 6 · Jun 16','Week 7 · Jun 23','Week 8 · Jun 30'];
+wkLbls.forEach(function(lbl,i){
+  var s=gs();
+  var val=s['weight-'+i]||'';
+  var prev=parseFloat(i>0?(s['weight-'+(i-1)]||''):101);
+  var delta='';var dc='eq';
+  if(val&&prev){var d=(parseFloat(val)-prev).toFixed(1);if(d<0){delta=d+'kg';dc='dn';}else if(d>0){delta='+'+d+'kg';dc='up';}else{delta='±0';dc='eq';}}
+  var div=document.createElement('div');
+  div.className='w-entry';
+  div.innerHTML='<div class="w-row"><span class="w-week">'+lbl+'</span><input class="w-input" type="number" step="0.1" placeholder="—" value="'+val+'" id="wi-'+i+'"><span class="w-unit">kg</span><span class="w-delta '+dc+'" id="wd-'+i+'">'+delta+'</span></div><button class="w-save" onclick="saveW('+i+')">Save weight ↗</button>';
+  wlEl.appendChild(div);
+});
+
+function saveW(i){
+  var s=gs();
+  var val=document.getElementById('wi-'+i).value;
+  if(!val)return;
+  s['weight-'+i]=val;
+  ss(s);
+  drawChart();
+  var prev=parseFloat(i>0?(s['weight-'+(i-1)]||101):101);
+  var d=(parseFloat(val)-prev).toFixed(1);
+  var wd=document.getElementById('wd-'+i);
+  if(d<0){wd.textContent=d+'kg';wd.className='w-delta dn';}
+  else if(d>0){wd.textContent='+'+d+'kg';wd.className='w-delta up';}
+  else{wd.textContent='±0';wd.className='w-delta eq';}
+  updateProg();
+}
+
+function drawChart(){
+  var s=gs();var pts=[];
+  for(var i=0;i<8;i++){var v=s['weight-'+i];if(v)pts.push({x:i,y:parseFloat(v)});}
+  var svg=document.getElementById('wt-chart');
+  if(pts.length<1){svg.innerHTML='<text x="160" y="58" text-anchor="middle" fill="#505050" font-size="12" font-family="DM Mono,monospace">Enter Monday weights to see chart</text>';return;}
+  var mn=84,mx=103,pw=320,ph=100,pd=22;var cw=pw-pd*2,ch=ph-pd*2;
+  var ty=pd+ch-((88-mn)/(mx-mn))*ch;
+  var out='<line x1="'+pd+'" y1="'+ty+'" x2="'+(pw-pd)+'" y2="'+ty+'" stroke="#145230" stroke-width="1.5" stroke-dasharray="5,3"/>';
+  out+='<text x="'+(pw-pd+3)+'" y="'+(ty+4)+'" font-size="9" fill="#3ddc84" font-family="DM Mono,monospace">88</text>';
+  if(pts.length>1){
+    var pl=pts.map(function(p){var x=pd+p.x*(cw/7);var y=pd+ch-((p.y-mn)/(mx-mn))*ch;return x+','+y;}).join(' ');
+    out+='<polyline points="'+pl+'" fill="none" stroke="#3ddc84" stroke-width="2.5" stroke-linejoin="round"/>';
+  }
+  pts.forEach(function(p){
+    var x=pd+p.x*(cw/7);var y=pd+ch-((p.y-mn)/(mx-mn))*ch;
+    out+='<circle cx="'+x+'" cy="'+y+'" r="4" fill="#3ddc84"/>';
+    out+='<text x="'+x+'" y="'+(y-7)+'" text-anchor="middle" font-size="9" fill="#90909090" font-family="DM Mono,monospace">'+p.y+'</text>';
+  });
+  svg.innerHTML=out;
+}
+
+// ── QUOTES ────────────────────────────────────────────
+var QS=[
+  {t:"The groundwork for all happiness is good health.",a:"Leigh Hunt"},
+  {t:"Take care of your body. It's the only place you have to live.",a:"Jim Rohn"},
+  {t:"A year from now you will wish you had started today.",a:"Karen Lamb"},
+  {t:"You don't have to be extreme. Just consistent.",a:"Unknown"},
+  {t:"Age is no barrier. It's a limitation you put on your mind.",a:"Jackie Joyner-Kersee"},
+  {t:"Discipline is the bridge between goals and accomplishment.",a:"Jim Rohn"},
+  {t:"It always seems impossible until it's done.",a:"Nelson Mandela"},
+  {t:"Your body can stand almost anything. It's your mind you have to convince.",a:"Unknown"},
+  {t:"Don't stop when you're tired. Stop when you're done.",a:"Unknown"},
+  {t:"The pain you feel today will be the strength you feel tomorrow.",a:"Unknown"},
+  {t:"Champions aren't made in gyms. They're made from something deep inside.",a:"Muhammad Ali"},
+  {t:"No matter how slow you go, you're still lapping everyone on the couch.",a:"Unknown"},
+  {t:"Success is the sum of small efforts, repeated day in and day out.",a:"Robert Collier"},
+  {t:"In two months you won't recognize yourself.",a:"Your future self"},
+  {t:"Every rep, every step, every good meal — it all compounds.",a:"Romeo's Plan"},
+  {t:"At 47 you're not slowing down. You're getting smarter.",a:"Romeo's Plan"},
+  {t:"13 kilograms. 8 weeks. One decision repeated daily.",a:"Romeo's Plan"},
+  {t:"88kg is not a number. It's a version of you that already exists.",a:"Romeo's Plan"},
+  {t:"The padel court doesn't care about your age. Your habits do.",a:"Romeo's Plan"},
+  {t:"Every Monday weigh-in is proof of what the previous week was worth.",a:"Romeo's Plan"},
+  {t:"The night stretch is where tomorrow's flexibility is built.",a:"Romeo's Plan"},
+  {t:"Sleep is not rest. Sleep is training.",a:"Romeo's Plan"},
+  {t:"Sweat is fat crying.",a:"Unknown"},
+  {t:"The secret of getting ahead is getting started.",a:"Mark Twain"},
+  {t:"Strength does not come from the body. It comes from the will of the soul.",a:"Gandhi"},
+  {t:"Difficult roads often lead to beautiful destinations.",a:"Unknown"},
+  {t:"Small daily improvements are the key to staggering long-term results.",a:"Unknown"},
+  {t:"Your only competition is the person you were yesterday.",a:"Unknown"}
+];
+var qi=Math.floor(Math.random()*QS.length);
+function showQ(){document.getElementById('q-text').textContent='"'+QS[qi].t+'"';document.getElementById('q-auth').textContent='— '+QS[qi].a;}
+function nextQ(){qi=(qi+1)%QS.length;showQ();}
+function prevQ(){qi=(qi-1+QS.length)%QS.length;showQ();}
+showQ();
+
+// ── RESET ─────────────────────────────────────────────
+function resetToday(){
+  if(!confirm('Reset today?'))return;
+  var s=gs();
+  todayItems.forEach(function(item){delete s[item.id];});
+  for(var i=0;i<8;i++)delete s['w-'+i];
+  ss(s);
+  document.querySelectorAll('#today-checks [data-id]').forEach(function(el){el.classList.remove('done');});
+  document.querySelectorAll('.water-cup').forEach(function(el){el.classList.remove('filled');});
+  updateProg();
+}
+function resetSupp(){
+  if(!confirm('Reset supplements?'))return;
+  var s=gs();
+  document.querySelectorAll('#s-supps [data-id]').forEach(function(el){el.classList.remove('done');delete s[el.getAttribute('data-id')];});
+  ss(s);
+}
+
+// ── INIT ──────────────────────────────────────────────
+loadState();
+updateProg();
+updateExDots();
+drawChart();
+</script>
+</body>
+</html>
